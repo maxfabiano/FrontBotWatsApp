@@ -1,18 +1,22 @@
 import axios from "axios";
-import { useAuth } from "../composables/useAuth"; // Caminho para o seu `useAuth.ts`
+import { useAuth } from "../composables/useAuth";
 
 const api = axios.create({
-    baseURL: "https://localhost:5001", // Sua API
+    baseURL: "https://localhost:5001",
 });
 
-// Interceptor para adicionar o Token JWT nos requests
+// Interceptor para adicionar token JWT
 api.interceptors.request.use(
     (config) => {
         const { user } = useAuth();
 
-        // Se houver um usuário logado, adiciona o token nos headers
-        if (user.value?.Token) {
-            config.headers.Authorization = `Bearer ${user.value.Token}`;
+        console.log("Interceptor - Usuário carregado:", user.value);
+
+        if (user.value?.token) {
+            console.log("Interceptor - token JWT presente:", user.value.token);
+            config.headers.Authorization = `Bearer ${user.value.token}`;
+        } else {
+            console.warn("Interceptor - Nenhum token encontrado!");
         }
 
         return config;

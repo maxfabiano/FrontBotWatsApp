@@ -1,36 +1,40 @@
-import { ref } from "vue";
-import type {User} from "../Models/User.ts";
+import { ref, watchEffect } from "vue";
+import type { User } from "../Models/User.ts";
 
-// Criar um estado reativo para armazenar os dados do usuário
-const user = ref<User | null>(getUserFromLocalStorage());
+const user = ref<User | null>(null);
 
-// Função para salvar no LocalStorage
+// Função para recuperar usuário do localStorage dinamicamente
+function loadUserFromLocalStorage() {
+    const data = localStorage.getItem("user");
+    if (data) {
+        try {
+            user.value = JSON.parse(data);
+        } catch (error) {
+            console.error("Erro ao recuperar usuário do localStorage:", error);
+        }
+    }
+}
+
+// Chamada automática para carregar os dados assim que `useAuth()` for importado
+loadUserFromLocalStorage();
+
+// Salvar usuário no localStorage e atualizar o estado reativo
 function saveUserToLocalStorage(userData: User) {
     localStorage.setItem("user", JSON.stringify(userData));
     user.value = userData;
 }
 
-// Função para recuperar os dados do LocalStorage
-function getUserFromLocalStorage(): User | null {
-    const data = localStorage.getItem("user");
-    if (data) {
-        try {
-            return JSON.parse(data);
-        } catch (error) {
-            console.error("Erro ao recuperar usuário do localStorage:", error);
-            return null;
-        }
-    }
-    return null;
-}
-
-// Função para remover os dados do usuário (logout)
+// Remover usuário no logout
 function logout() {
     localStorage.removeItem("user");
     user.value = null;
 }
 
-// Exportar funções para serem usadas nos componentes
+// Atualiza o `user` automaticamente quando o localStorage mudar
+watchEffect(() => {
+    loadUserFromLocalStorage();
+});
+
 export function useAuth() {
     return {
         user,

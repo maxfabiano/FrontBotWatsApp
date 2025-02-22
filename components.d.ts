@@ -7,11 +7,18 @@ export {}
 /* prettier-ignore */
 declare module 'vue' {
   export interface GlobalComponents {
+    BAccordion: typeof import('bootstrap-vue-next/components/BAccordion')['BAccordion']
+    BAccordionItem: typeof import('bootstrap-vue-next/components/BAccordion')['BAccordionItem']
+    BAlert: typeof import('bootstrap-vue-next/components/BAlert')['BAlert']
+    BAvatar: typeof import('bootstrap-vue-next/components/BAvatar')['BAvatar']
+    BBadge: typeof import('bootstrap-vue-next/components/BBadge')['BBadge']
     BButton: typeof import('bootstrap-vue-next/components/BButton')['BButton']
     BCard: typeof import('bootstrap-vue-next/components/BCard')['BCard']
     BCardGroup: typeof import('bootstrap-vue-next/components/BCard')['BCardGroup']
     BCardText: typeof import('bootstrap-vue-next/components/BCard')['BCardText']
     BCollapse: typeof import('bootstrap-vue-next/components/BCollapse')['BCollapse']
+    BContainer: typeof import('bootstrap-vue-next/components/BContainer')['BContainer']
+    BDropdown: typeof import('bootstrap-vue-next/components/BDropdown')['BDropdown']
     BDropdownDivider: typeof import('bootstrap-vue-next/components/BDropdown')['BDropdownDivider']
     BDropdownItem: typeof import('bootstrap-vue-next/components/BDropdown')['BDropdownItem']
     BForm: typeof import('bootstrap-vue-next/components/BForm')['BForm']
@@ -21,7 +28,12 @@ declare module 'vue' {
     BFormGroup: typeof import('bootstrap-vue-next/components/BFormGroup')['BFormGroup']
     BFormInput: typeof import('bootstrap-vue-next/components/BFormInput')['BFormInput']
     BFormSelect: typeof import('bootstrap-vue-next/components/BFormSelect')['BFormSelect']
+    BFormSelectOption: typeof import('bootstrap-vue-next/components/BFormSelect')['BFormSelectOption']
+    BFormTextarea: typeof import('bootstrap-vue-next/components/BFormTextarea')['BFormTextarea']
     BImg: typeof import('bootstrap-vue-next/components/BImg')['BImg']
+    BListGroup: typeof import('bootstrap-vue-next/components/BListGroup')['BListGroup']
+    BListGroupItem: typeof import('bootstrap-vue-next/components/BListGroup')['BListGroupItem']
+    BModal: typeof import('bootstrap-vue-next/components/BModal')['BModal']
     BNav: typeof import('bootstrap-vue-next/components/BNav')['BNav']
     BNavbar: typeof import('bootstrap-vue-next/components/BNavbar')['BNavbar']
     BNavbarBrand: typeof import('bootstrap-vue-next/components/BNavbar')['BNavbarBrand']
@@ -30,6 +42,8 @@ declare module 'vue' {
     BNavForm: typeof import('bootstrap-vue-next/components/BNav')['BNavForm']
     BNavItem: typeof import('bootstrap-vue-next/components/BNav')['BNavItem']
     BNavItemDropdown: typeof import('bootstrap-vue-next/components/BNav')['BNavItemDropdown']
+    BRow: typeof import('bootstrap-vue-next/components/BContainer')['BRow']
+    BTable: typeof import('bootstrap-vue-next/components/BTable')['BTable']
     Dashboard: typeof import('./src/components/Dashboard.vue')['default']
     HelloWorld: typeof import('./src/components/HelloWorld.vue')['default']
     Login: typeof import('./src/components/Login.vue')['default']
@@ -39,5 +53,6 @@ declare module 'vue' {
   }
   export interface ComponentCustomProperties {
     vBColorMode: typeof import('bootstrap-vue-next/directives/BColorMode')['vBColorMode']
+    vBModal: typeof import('bootstrap-vue-next/directives/BModal')['vBModal']
   }
 }
