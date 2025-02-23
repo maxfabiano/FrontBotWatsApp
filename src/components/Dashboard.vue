@@ -73,7 +73,7 @@
               <BListGroup v-for="(itenHeader, index) in messagesOptions" :key="itenHeader.telefone">
                 <BListGroupItem class="d-flex justify-content-between align-items-center">
                   <BAccordionItem :title="itenHeader.telefone">
-                    <p :show="scrollToBottom(index)" :ref="el => messageBodyRefs[index] = el" class="messageBody overflow-y-scroll" v-html="formatMessages(itenHeader.messages)"></p>
+                    <p :show="scrollToBottom(index)" :ref="el => messageBodyRefs[index] = el as HTMLElement | null" class="messageBody overflow-y-scroll" v-html="formatMessages(itenHeader.messages)"></p>
                     <BFormInput @keyup.enter="sendMessage(index,itenHeader.telefone,itenHeader.phoneid)" style="width: 140%" v-model="menssageSend[index]" placeholder="Enviar mensagem"></BFormInput>
                   </BAccordionItem>
                 </BListGroupItem>
@@ -163,17 +163,29 @@
     </BModal>
 
     <BModal v-model="showModalMensagemEmMassa" centered size="lg" title="Envio de mensagem em massa"
-            @ok="handleFirstModal">
+            @ok="sendMessageTemplate(roboNameTemplate, phoneNumber,  templateNameEnviar,  param1,  param2,  urlButtomTemplate)">
       <BForm>
         <BFormGroup label="Robo">
-          <BFormSelect v-model="nivelC" :options="roboOptions" class="mb-3" required>
+          <BFormSelect v-model="roboNameTemplate" :options="roboOptions" class="mb-3" required>
             <BFormSelectOption :value="null" disabled>Selecione o Robo</BFormSelectOption>
           </BFormSelect>
         </BFormGroup>
         <BFormGroup label="Mensagem template">
-          <BFormSelect v-model="nivelC" :options="templateOptions" class="mb-3" required>
+          <BFormSelect v-model="templateNameEnviar" :options="templateOptions" class="mb-3" required>
             <BFormSelectOption :value="null" disabled>Selecione o template</BFormSelectOption>
           </BFormSelect>
+        </BFormGroup>
+        <BFormGroup label="Telefone">
+          <BFormInput v-model="phoneNumber" placeholder="Telefone" required rows="1" type="text"/>
+        </BFormGroup>
+        <BFormGroup label="Inicio da mensagem">
+          <BFormInput v-model="param1" placeholder="Inicio da mensagem" required rows="1" type="text"/>
+        </BFormGroup>
+        <BFormGroup label="Final da mensagem">
+          <BFormInput v-model="param2" placeholder="Novo Token" required rows="1" type="text"/>
+        </BFormGroup>
+        <BFormGroup label="Url redirecionamento do botão">
+          <BFormInput v-model="urlButtomTemplate" placeholder="Novo Token" required rows="1" type="text"/>
         </BFormGroup>
       </BForm>
     </BModal>
@@ -200,6 +212,8 @@ import {faRobot} from '@fortawesome/free-solid-svg-icons';
 import {faGear} from '@fortawesome/free-solid-svg-icons';
 import {useRouter} from "vue-router";
 import type {User} from "../Models/User.ts";
+import type {Message} from "../Models/Message.ts";
+import type {Template} from "../Models/Template.ts";
 library.add(faRobot);
 library.add(faGear);
 
@@ -229,11 +243,16 @@ const emailC = ref("");
 const senhaC = ref("");
 const admsenhaC = ref("");
 const nivelC = ref("");
+const roboNameTemplate = ref("");
+const templateNameEnviar = ref("");
+const param1 = ref("");
+const param2 = ref("");
+const urlButtomTemplate = ref("");
 const nivelLocal = ref(0);
 const nivelUsuario = ref(0);
 const roboOptions = ref<Array<{ value: string; text: string; }>>([]);
 const templateOptions = ref<Array<{ value: string; text: string; }>>([]);
-const messagesOptions = ref<Array<{ telefone: string; messages: string;  phoneid: string; }>>([]);
+const messagesOptions = ref<Array<{ telefone: string; messages: string[];  phoneid: string; }>>([]);
 const { saveUserToLocalStorage } = useAuth();
 const { logout } = useAuth();
 
@@ -248,7 +267,7 @@ const formatMessageWithBreaks = (message: string): string => {
 const formatMessages = (messages: string[]): string => {
   return messages.map(msg => formatMessageWithBreaks(msg)).join("<br>");
 };
-const messageBodyRefs = ref<Array<HTMLElement | null>>([]);
+const messageBodyRefs = ref<(HTMLElement | null)[]>([]);
 const menssageSend = ref<Array<string>>([]); // Array para armazenar as mensagens
 
 const scrollToBottom = (index: number) => {
@@ -286,40 +305,51 @@ const sendMessage = async (index: number, telefone: string, phoneid: string) => 
     // Limpar o campo de entrada após o envio
     menssageSend.value[index] = "";
   }
+};const sendMessageTemplate = async ( phoneNumberId: string, destinatario: string,  templateName:string,  param1:string,  param2:string,  url:string) => {
+
+      var arrayDestinatario = destinatario.split(",");
+      for (const element of arrayDestinatario) {
+        if(user.value !=null) {
+          await WhatsAppService.enviarMensagemTemplate(user.value?.nome, user.value?.senha, phoneNumberId, element, templateName, param1, param2, url);
+        }
+      }
+  await iniciarRobosMensagens();
 };
 let iniciarVariaveis = async ()=>{
   if (user.value != null) {
     try {
-      messageBodyRefs.value = messagesOptions.value.map(() => null);
+      messageBodyRefs.value = messagesOptions.value.map(() => new HTMLElement());
       menssageSend.value = messagesOptions.value.map(() => ""); // Inicializa com strings vazias
       const responseTemplate = await WhatsAppService.GetThemplates(user.value?.nome,user.value?.senha);
 
       if (Array.isArray(responseTemplate.data.data)) {
-        responseTemplate.data.data.forEach((templl) => {
+        responseTemplate.data.data.forEach((templl:Template) => {
           templateOptions.value.push({value: templl.name, text: templl.name});
         });
       } else {
         console.error("Erro: templa.data não é um array válido.");
       }
       await iniciarRobosMensagens();
-    } catch (error) {
-      if(user.value !=null){
-        WhatsAppService.loginUsuario(user.value?.nome, user.value?.senha)
-            .then(response => {
-              if (response.status === 200) { // Verifica se a requisição foi bem-sucedida
-                const userR: User = response.data;
-                saveUserToLocalStorage(userR);
-              }
-            })
-        nivelLocal.value = user.value.nivel;
-      }
-      if (error.status == "500" && nivelLocal.value == 1) {
-        showModalToken.value = true;
-      } else {
-        await logout();
-        await router.push("/");
-        console.error("Erro ao obter robôs:", error.message);
-        // Exibir mensagem de erro para o usuário, por exemplo, usando um modal ou toast
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        if (user.value != null) {
+          WhatsAppService.loginUsuario(user.value?.nome, user.value?.senha)
+              .then(response => {
+                if (response.status === 200) { // Verifica se a requisição foi bem-sucedida
+                  const userR: User = response.data;
+                  saveUserToLocalStorage(userR);
+                }
+              })
+          nivelLocal.value = user.value.nivel;
+        }
+        if (nivelLocal.value == 1) {
+          showModalToken.value = true;
+        } else {
+          await logout();
+          await router.push("/");
+          console.error("Erro ao fazerlogin:", error.message);
+          // Exibir mensagem de erro para o usuário, por exemplo, usando um modal ou toast
+        }
       }
     }
   }
@@ -329,7 +359,7 @@ const iniciaMensagens = async (robos: Robo[]) => {
     if(user.value != null) {
       const responseMessages = await WhatsAppService.allmessagesfromnumber(roboM.telefone, user.value.nome, user.value.senha);
       if (Array.isArray(responseMessages.data)) {
-        responseMessages.data.forEach((messageItem) => {
+        responseMessages.data.forEach((messageItem:Message) => {
           const existingEntry = messagesOptions.value.find(
               (entry) => entry.telefone === messageItem.telefone
           );
@@ -483,7 +513,7 @@ const handleThirdModal = async () => {
 watch(messagesOptions, () => {
   nextTick(() => {
     messagesOptions.value.forEach((itenHeader, index) => {
-      if (messageBodyRefs.value[index]) {
+      if (messageBodyRefs.value[index] && Array.isArray(itenHeader.messages)) {
         messageBodyRefs.value[index]!.innerHTML = formatMessages(itenHeader.messages);
       }
     });

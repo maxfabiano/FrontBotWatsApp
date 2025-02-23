@@ -14,6 +14,17 @@ class WhatsAppService {
             throw error;
         }
     }
+async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: string, destinatario: string,  templateName:string,  param1:string,  param2:string,  url:string): Promise<any> {
+        try {
+            const response = await api.post(`${this.url}/enviarTemplate`, null, {
+                params: {usuario, senha, PhoneNumberID: phoneNumberId, destinatario, templateName, param1, param2, url}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao enviar mensagem:', error);
+            throw error;
+        }
+    }
 
     async waabid(): Promise<any> {
         try {

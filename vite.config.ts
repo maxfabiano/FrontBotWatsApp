@@ -11,4 +11,10 @@ export default defineConfig({
       resolvers: [BootstrapVueNextResolver()],
     }),
   ],
+  build: {
+    outDir: 'dist',
+    rollupOptions: {
+      input: 'src/main.ts' // Certifique-se de que este caminho está correto
+    }
+  }
 })

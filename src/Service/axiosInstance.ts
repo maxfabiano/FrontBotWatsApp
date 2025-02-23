@@ -2,10 +2,10 @@ import axios from "axios";
 import { useAuth } from "../composables/useAuth";
 
 const api = axios.create({
-    baseURL: "https://localhost:5001",
+    baseURL: "https://d6a0-170-231-235-102.ngrok-free.app",
 });
 
-// Interceptor para adicionar token JWT
+// Interceptor para adicionar token JWT e ngrok-skip-browser-warning
 api.interceptors.request.use(
     (config) => {
         const { user } = useAuth();
@@ -18,6 +18,9 @@ api.interceptors.request.use(
         } else {
             console.warn("Interceptor - Nenhum token encontrado!");
         }
+
+        // Adiciona o cabeçalho ngrok-skip-browser-warning
+        config.headers['ngrok-skip-browser-warning'] = 'true';
 
         return config;
     },
