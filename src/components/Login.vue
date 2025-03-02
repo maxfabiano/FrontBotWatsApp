@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
-import WhatsAppService from '../Service/watsapiservice.ts'
+import WhatsAppService from '../Service/watsapiservice'
 import { useRouter } from "vue-router";
-import { useAuth } from "../composables/useAuth.ts";
+import { useAuth } from "../composables/useAuth";
 import type { User } from "../Models/User.ts";
 
 const { saveUserToLocalStorage } = useAuth();

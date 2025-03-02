@@ -1,7 +1,9 @@
 import api from "./axiosInstance";
 
 class WhatsAppService {
-    private readonly url = 'https://localhost:5001/WhatsApp';
+    get url() {
+        return window.config?.API_BASE_URL || 'https://localhost:5001/WhatsApp';
+    }
 
     async enviarMensagem(usuario: string, senha: string, phoneNumberId: string, destinatario: string, mensagem: string): Promise<any> {
         try {
@@ -48,10 +50,10 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
         }
     }
 
-    async addUsuario(usuario: string, email: string, senha: string, admsenha: string, admUsuario: string, nivel: string): Promise<any> {
+    async addUsuario(usuario: string, email: string, senha: string, admsenha: string, admUsuario: string, nivel: string, TokenUser: string, TokenAdmin: string): Promise<any> {
         try {
             const response = await api.post(`${this.url}/addusuario`, null, {
-                params: {usuario, email, senha, admsenha, admUsuario, Nivel: nivel}
+                params: {usuario, email, senha, admsenha, admUsuario, Nivel: nivel,TokenUser:TokenUser,TokenAdmin:TokenAdmin}
             });
             return response;
         } catch (error) {
@@ -108,10 +110,21 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
         }
     }
 
-    async addPhoneNumber(usuario: string, senha: string, phoneNumberId: string, phone_number: string, verified_name: string): Promise<any> {
+    async addPhoneNumber(Telefone: string,TelefoneId: string,WabaId: string,Usuario: string): Promise<any> {
         try {
             const response = await api.post(`${this.url}/ADDPhoneNumber`, null, {
-                params: {usuario, senha, phoneNumberId, phone_number, verified_name}
+                params: {Telefone,TelefoneId, WabaId, Usuario}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao adicionar número de telefone:', error);
+            throw error;
+        }
+    }
+async ADDPhoneNumbersScript(Telefone: string,WabaId: string,Usuario: string): Promise<any> {
+        try {
+            const response = await api.post(`${this.url}/ADDPhoneNumbersScript`, null, {
+                params: {Telefone, WabaId, Usuario}
             });
             return response;
         } catch (error) {
@@ -126,6 +139,17 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
                 params: {usuario, senha, phoneNumberId, pin}
             });
             return response;
+        } catch (error) {
+            console.error('Erro ao adicionar número de telefone:', error);
+            throw error;
+        }
+    }
+async ProcessMensagemScript(message: string, telefone: string, usuario: string): Promise<string> {
+        try {
+            const response = await api.post(`${this.url}/ProcessMensagemScript`, null, {
+                params: {message, telefone, usuario}
+            });
+            return response.toString();
         } catch (error) {
             console.error('Erro ao adicionar número de telefone:', error);
             throw error;
@@ -180,10 +204,10 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
         }
     }
 
-    async GetThemplates(usuario: string, senha: string): Promise<any> {
+    async GetThemplates(usuario: string, senha: string,Telefone: string): Promise<any> {
         try {
             const response = await api.get(`${this.url}/GetThemplates`, {
-                params: {usuario, senha}
+                params: {usuario, senha,Telefone}
             });
             return response;
         } catch (error) {
@@ -224,20 +248,41 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
         return partes;
     }
 
-    async criarRobo(phoneNumberId: string, content: string, usuario: string, senha: string, telefone: string): Promise<any> {
+    async criarRobo( content: string, usuario: string, senha: string, telefone: string): Promise<any> {
         try {
             // Aguarda a divisão do conteúdo em partes
             const contentPartes = content.length > 1000 ? await this.dividirStringEmPartes(content) : [content];
-
             // Cria o robô com a primeira parte do conteúdo
             const response = await api.post(`${this.url}/criarRobo`, null, {
-                params: { phoneNumberId, content: contentPartes[0], usuario, senha, telefone }
+                params: { content: contentPartes[0], usuario, senha, telefone }
             });
 
             // Atualiza o conteúdo com as partes restantes (se houver)
             for (let i = 1; i < contentPartes.length; i++) {
                 await api.post(`${this.url}/UpdateRoboContent`, null, {
-                    params: { phoneNumberId, content: contentPartes[i], usuario, senha, telefone }
+                    params: { content: contentPartes[i], usuario, senha, telefone }
+                });
+            }
+
+            return response;
+        } catch (error) {
+            console.error('Erro ao criar robô:', error);
+            throw error;
+        }
+    }
+async criarRoboScript( content: string, usuario: string, senha: string, telefone: string): Promise<any> {
+        try {
+            // Aguarda a divisão do conteúdo em partes
+            const contentPartes = content.length > 1000 ? await this.dividirStringEmPartes(content) : [content];
+            // Cria o robô com a primeira parte do conteúdo
+            const response = await api.post(`${this.url}/criarRobo`, null, {
+                params: { content: contentPartes[0], usuario, senha, telefone }
+            });
+
+            // Atualiza o conteúdo com as partes restantes (se houver)
+            for (let i = 1; i < contentPartes.length; i++) {
+                await api.post(`${this.url}/UpdateRoboContent`, null, {
+                    params: { content: contentPartes[i], usuario, senha, telefone }
                 });
             }
 
@@ -297,6 +342,35 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
             throw error;
         }
     }
+    async iniciarWatsapp(telefone: string): Promise<any> {
+        try {
+            const response = await api.post(
+                `${this.url}/iniciarWatsapp`,
+                null,
+                {
+                    params: { telefone }, // ✅ Correto
+                    responseType: "blob", // 🔥 Garante que a resposta seja um BLOB (imagem)
+                }
+            );
+            return response;
+        } catch (error) {
+            console.error("Erro ao obter conteúdo do robô do usuário:", error);
+            throw error;
+        }
+    }
+
+
+async enviarmensagemwatsapp(numero: string,usuario: string,mensagem: string): Promise<any> {
+        try {
+            const response = await api.post(`${this.url}/enviarmensagemwatsapp`,null, {
+                params: { numero:numero,usuario:usuario,mensagem:mensagem}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao obter conteúdo do robô do usuário:', error);
+            throw error;
+        }
+    }
 
     async getRoboNamesAll(usuario: string, senha: string): Promise<any> {
         try {
@@ -306,6 +380,61 @@ async enviarMensagemTemplate(usuario: string, senha: string, phoneNumberId: stri
             return response;
         } catch (error) {
             console.error('Erro ao obter nomes de todos os robôs:', error);
+            throw error;
+        }
+    }
+    async GetMensagensPorTelefone(usuario: string): Promise<any> {
+        try {
+            const response = await api.get(`${this.url}/GetMensagensPorTelefone`, {
+                params: { usuario}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao obter GetMensagensPorTelefone:', error);
+            throw error;
+        }
+    }
+    async GetMensagensPorHorario(usuario: string): Promise<any> {
+        try {
+            const response = await api.get(`${this.url}/GetMensagensPorHorario`, {
+                params: { usuario}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao obter GetMensagensPorTelefone:', error);
+            throw error;
+        }
+    }
+    async GetTempoMedioResposta(usuario: string): Promise<any> {
+        try {
+            const response = await api.get(`${this.url}/GetTempoMedioResposta`, {
+                params: { usuario}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao obter GetMensagensPorTelefone:', error);
+            throw error;
+        }
+    }
+    async GetTaxaRespostaContatos(usuario: string): Promise<any> {
+        try {
+            const response = await api.get(`${this.url}/GetTaxaRespostaContatos`, {
+                params: { usuario}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao obter GetMensagensPorTelefone:', error);
+            throw error;
+        }
+    }
+    async GetContatosRecentes(usuario: string): Promise<any> {
+        try {
+            const response = await api.get(`${this.url}/GetContatosRecentes`, {
+                params: { usuario}
+            });
+            return response;
+        } catch (error) {
+            console.error('Erro ao obter GetMensagensPorTelefone:', error);
             throw error;
         }
     }
