@@ -9,6 +9,7 @@ export {}
 declare module 'vue' {
   export interface GlobalComponents {
     BAccordionItem: typeof import('bootstrap-vue-next')['BAccordionItem']
+    BAlert: typeof import('bootstrap-vue-next')['BAlert']
     BAvatar: typeof import('bootstrap-vue-next')['BAvatar']
     BButton: typeof import('bootstrap-vue-next')['BButton']
     BCard: typeof import('bootstrap-vue-next')['BCard']
@@ -28,11 +29,19 @@ declare module 'vue' {
     BListGroup: typeof import('bootstrap-vue-next')['BListGroup']
     BListGroupItem: typeof import('bootstrap-vue-next')['BListGroupItem']
     BModal: typeof import('bootstrap-vue-next')['BModal']
+    BOverlay: typeof import('bootstrap-vue-next')['BOverlay']
     BTab: typeof import('bootstrap-vue-next')['BTab']
     BTabs: typeof import('bootstrap-vue-next')['BTabs']
+    BToast: typeof import('bootstrap-vue-next')['BToast']
+    CadastroRoboModal: typeof import('./src/components/Modais/CadastroRoboModal.vue')['default']
+    CadastroTokenModal: typeof import('./src/components/Modais/CadastroTokenModal.vue')['default']
     Dashboard: typeof import('./src/components/Dashboard.vue')['default']
     Login: typeof import('./src/components/Login.vue')['default']
+    MensagemEmMassaScriptModal: typeof import('./src/components/Modais/MensagemEmMassaScriptModal.vue')['default']
+    MensagemEmMassaTemplateModal: typeof import('./src/components/Modais/MensagemEmMassaTemplateModal.vue')['default']
+    ModalAlert: typeof import('./src/components/Modais/modalAlert.vue')['default']
     Navbar: typeof import('./src/components/Navbar.vue')['default']
+    QrCodeLoginModal: typeof import('./src/components/Modais/QrCodeLoginModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
   }

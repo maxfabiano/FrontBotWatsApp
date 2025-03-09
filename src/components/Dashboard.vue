@@ -1,4 +1,9 @@
 <template>
+  <modal-alert
+      :message="toastcontent"
+      variant="info"
+      :active="Toastactive"
+  />
   <BContainer fluid style="background-color:black">
     <div class="container-fluid">
       <div class="row">
@@ -214,8 +219,17 @@
       </BFormGroup>
     </BModal>
     <BModal v-model="showModalQrCode" centered size="lg" title="Login" @ok="qrcodeEnviarScript">
+      <BOverlay
+          :show="loadingBuzy"
+          rounded
+          opacity="0.6"
+          spinner-small
+          spinner-variant="primary"
+          class="d-inline-block"
+      >
 
       <BImg :src="QrCodecontent" fluid alt="Fluid image" />
+      </BOverlay>
 
     </BModal>
 
@@ -247,11 +261,11 @@
       </BForm>
     </BModal>
 <BModal v-model="showModalMensagemEmMassaScript" centered size="lg" title="Envio de mensagem em massa Script"
-            @ok="sendMessageScript(phoneNumber,param1)">
+            @ok="sendMessageScript(roboNameTemplate,phoneNumber,param1)">
       <BForm>
         <BFormGroup label="Robo">
           <BFormSelect v-model="roboNameTemplate" :options="roboOptions" class="mb-3" required>
-            <BFormSelectOption :value="null" disabled>Selecione o Robo</BFormSelectOption>
+            <BFormSelectOption v-model="phoneNumberRobo" :value="null" disabled>Selecione o Robo</BFormSelectOption>
           </BFormSelect>
         </BFormGroup>
         <BFormGroup label="Telefone">
@@ -296,6 +310,7 @@ import { ScatterChart } from 'vue-chart-3';
 import { RadarChart } from 'vue-chart-3';
 
 import { Chart, registerables } from "chart.js";
+import ModalAlert from "./Modais/modalAlert.vue";
 
 library.add(faPhone);
 library.add(faGear);
@@ -314,6 +329,7 @@ const showModalAddTelefone = ref(false);
 const showModalToken = ref(false);
 const showModalMessages = ref(false);
 const showModalQrCode = ref(false);
+const Toastactive = ref(false);
 const showModalMensagemEmMassa = ref(false);
 const refreshQr = ref(false);
 const showModalMensagemEmMassaScript = ref(false);
@@ -322,8 +338,10 @@ const tabIndex = ref(0)
 
 // Dados do robô
 const phoneNumber = ref("");
+const phoneNumberRobo = ref("");
 const verificationCode = ref("");
 const content = ref("");
+const toastcontent = ref("");
 const QrCodecontent = ref("");
 let phoneNumberIdR = "";
 const router = useRouter();
@@ -348,6 +366,8 @@ const templateOptions = ref<Array<{ value: string; text: string; }>>([]);
 const messagesOptions = ref<Array<{ telefone: string; messages: string[];  phoneid: string; }>>([]);
 const { saveUserToLocalStorage } = useAuth();
 const { logout } = useAuth();
+const loadingBuzy = ref(false)
+const intervalIdQRcode = ref(0)
 
 const usuarioAlterarSenha = ref("");
 const senhaNovaAlterarSenha = ref("");
@@ -483,12 +503,16 @@ const chartOptionsGetContatosRecentes = {
 
 const fetchDataGetMensagensPorTelefone = async () => {
   if(user.value != null) {
-
-    const response = await WhatsAppService.GetMensagensPorTelefone(user.value?.nome)
-    const data = JSON.stringify(response.data);
-    if (Array.isArray(response.data)) {
-      chartDataGetMensagensPorTelefone.value.labels = response.data.map((item: any) => item.telefone);
-      chartDataGetMensagensPorTelefone.value.datasets[0].data = response.data.map((item: any) => item.quantidade);
+    try {
+      const response = await WhatsAppService.GetMensagensPorTelefone(user.value?.nome);
+      const data = JSON.stringify(response.data);
+      if (Array.isArray(response.data)) {
+        chartDataGetMensagensPorTelefone.value.labels = response.data.map((item: any) => item.telefone);
+        chartDataGetMensagensPorTelefone.value.datasets[0].data = response.data.map((item: any) => item.quantidade);
+      }
+    }catch(err) {
+      await logout();
+      await router.push("/");
     }
   }
 };
@@ -551,7 +575,13 @@ const fetchDataGetTempoMedioResposta = async () => {
       const message = menssageSend.value[index].trim();
       // Aqui você pode adicionar a lógica para enviar a mensagem
       if (user.value != null) {
+        Toastactive.value = false;
+        Toastactive.value = true;
+        toastcontent.value = "Iniciando o envio de mensagem para "+telefone;
         await WhatsAppService.enviarMensagem(user.value?.nome, user.value?.senha, phoneid, telefone, message);
+        Toastactive.value = false;
+        Toastactive.value = true;
+        toastcontent.value = "Mensagem enviada com sucesso para "+telefone;
       }
       await iniciarRobosMensagens();
       // Limpar o campo de entrada após o envio
@@ -563,43 +593,113 @@ const fetchDataGetTempoMedioResposta = async () => {
     var arrayDestinatario = destinatario.split(",");
     for (const element of arrayDestinatario) {
       if (user.value != null) {
+        Toastactive.value = false;
+        Toastactive.value = true;
+        toastcontent.value = "Iniciando o envio de mensagem para "+destinatario;
         await WhatsAppService.enviarMensagemTemplate(user.value?.nome, user.value?.senha, phoneNumberId, element, templateName, param1, param2, url);
+        Toastactive.value = false;
+        Toastactive.value = true;
+        toastcontent.value = "Mensagem enviada com sucesso para "+destinatario;
       }
     }
     await iniciarRobosMensagens();
   };
+async function buscarQrCode() {
+  const response = await WhatsAppService.iniciarWatsapp(roboNameTemplate.value);
+  if (response.status === 200) {
+      const imageUrl = URL.createObjectURL(response.data);
+      console.log('URL da imagem gerada:', imageUrl);
+    loadingBuzy.value = false;
 
+    QrCodecontent.value = imageUrl;
+      showModalQrCode.value = false;
+    showModalQrCode.value = true;
+  }
+}
 
-  const sendMessageScript = async (destinatario: string, param1: string) => {
+  const sendMessageScript = async (roname: string,destinatario: string, param1: string) => {
     try {
+      console.log("inicio222222");
+      console.log("inicio222222");
+
       if (user.value != null) {
-        const response = await WhatsAppService.iniciarWatsapp(destinatario);
+
+        const response = await WhatsAppService.iniciarWatsapp(roname);
 
         console.log("Resposta da API:", response); // Debug
 
         if (response.status == 200) {
-          // ✅ Criando URL da imagem a partir do Blob corretamente
-          const imageUrl = URL.createObjectURL(response.data);
-
-          console.log("URL da imagem gerada:", imageUrl); // Debug
-
-          QrCodecontent.value = imageUrl;
+          loadingBuzy.value = true
           showModalQrCode.value = true;
-        } else {
-          await WhatsAppService.enviarmensagemwatsapp(destinatario, user.value?.nome, param1);
+          intervalIdQRcode.value = window.setInterval(buscarQrCode, 30000);
+          console.log("333333333333");
 
+        } else {
+          if (destinatario.includes(',')) {
+
+            const numeros = destinatario.split(',');
+            for (const element of numeros) {
+              const numeroLimpo = element.trim();
+              Toastactive.value = false;
+              Toastactive.value = true;
+              toastcontent.value = "Iniciando o envio de mensagem para "+numeroLimpo;
+              await WhatsAppService.enviarmensagemwatsapp(numeroLimpo, roboNameTemplate.value, param1);
+              Toastactive.value = false;
+              Toastactive.value = true;
+              toastcontent.value = "Mensagem enviada com sucesso para "+numeroLimpo;
+            }
+          }else{
+            console.log("55555555555");
+            Toastactive.value = false;
+            Toastactive.value = true;
+            toastcontent.value = "Iniciando o envio de mensagem para "+destinatario;
+            await WhatsAppService.enviarmensagemwatsapp(destinatario, roboNameTemplate.value, param1);
+            Toastactive.value = false;
+            Toastactive.value = true;
+            toastcontent.value = "Mensagem enviada com sucesso para "+destinatario;
+
+          }
         }
       }
     } catch (e) {
       if (user.value != null) {
+        if (destinatario.includes(',')) {
+          const numeros = destinatario.split(',');
+          for (const element of numeros) {
+            const numeroLimpo = element.trim();
+            Toastactive.value = false;
+            Toastactive.value = true;
+            toastcontent.value = "Iniciando o envio de mensagem para "+numeroLimpo;
+            await WhatsAppService.enviarmensagemwatsapp(numeroLimpo, roboNameTemplate.value, param1);
+            Toastactive.value = false;
+            Toastactive.value = true;
+            toastcontent.value = "Mensagem enviada com sucesso para "+numeroLimpo;
+          }
 
-        await WhatsAppService.enviarmensagemwatsapp(destinatario, user.value?.nome, param1);
+        }else{
+          console.log("55555555555");
+          Toastactive.value = false;
+          Toastactive.value = true;
+          toastcontent.value = "Iniciando o envio de mensagem para "+destinatario;
+          await WhatsAppService.enviarmensagemwatsapp(destinatario, roboNameTemplate.value, param1);
+          Toastactive.value = false;
+          Toastactive.value = true;
+          toastcontent.value = "Mensagem enviada com sucesso para "+destinatario;
+
+        }
       }
     }
   }
   const qrcodeEnviarScript = async () => {
     if (user.value != null) {
-      await WhatsAppService.enviarmensagemwatsapp(phoneNumber.value, user.value?.nome, param1.value);
+      window.clearInterval(intervalIdQRcode.value);
+      Toastactive.value = false;
+      Toastactive.value = true;
+      toastcontent.value = "Iniciando o envio de mensagem para "+phoneNumber.value;
+      await WhatsAppService.enviarmensagemwatsapp(phoneNumber.value, roboNameTemplate.value, param1.value);
+      Toastactive.value = false;
+      Toastactive.value = true;
+      toastcontent.value = "Mensagem enviada com sucesso para "+phoneNumber.value;
     }
   };
 
@@ -678,7 +778,8 @@ const fetchDataGetTempoMedioResposta = async () => {
     {value: '2', text: 'Robo Envio Api Oficial'},
   ]
   onMounted(async () => {
-    await fetchDataGetMensagensPorTelefone();
+    await fetchDataGetMensagensPorTelefone()
+
     await fetchDataGetMensagensPorHorario();
     await fetchDataGetTempoMedioResposta();
     await fetchDataGetTaxaRespostaContatos();

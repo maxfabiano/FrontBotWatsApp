@@ -342,13 +342,13 @@ async criarRoboScript( content: string, usuario: string, senha: string, telefone
             throw error;
         }
     }
-    async iniciarWatsapp(telefone: string): Promise<any> {
+    async iniciarWatsapp(usuario: string): Promise<any> {
         try {
             const response = await api.post(
                 `${this.url}/iniciarWatsapp`,
                 null,
                 {
-                    params: { telefone }, // ✅ Correto
+                    params: { usuario }, // ✅ Correto
                     responseType: "blob", // 🔥 Garante que a resposta seja um BLOB (imagem)
                 }
             );
