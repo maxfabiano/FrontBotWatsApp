@@ -310,7 +310,6 @@ import { ScatterChart } from 'vue-chart-3';
 import { RadarChart } from 'vue-chart-3';
 
 import { Chart, registerables } from "chart.js";
-import ModalAlert from "./Modais/modalAlert.vue";
 
 library.add(faPhone);
 library.add(faGear);
